@@ -36,3 +36,37 @@
   font-size: 14px;
 }
 
+.toggle-nearby-button {
+  width: 100%;
+  padding: 12px 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  background: #FF642F;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-nearby-button:hover:not(:disabled) {
+  background: #e55a28;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.toggle-nearby-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-nearby-button:disabled {
+  background: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+

@@ -17,7 +17,7 @@ function SearchBar({ onSearch, loading }) {
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search for places..."
+        placeholder="Search for places or enter coordinates (lat, lng)..."
         className="search-input"
         disabled={loading}
       />

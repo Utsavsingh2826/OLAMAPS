@@ -96,6 +96,128 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+// Nearby places endpoint
+app.post("/api/nearby", async (req, res) => {
+  try {
+    const { location, radius = 1000, types } = req.body;
+
+    if (!location) {
+      return res.status(400).json({ error: "Location is required (lat,lng)" });
+    }
+
+    const origin = req.headers.origin || req.headers.referer || 'http://localhost:3000';
+    const apiKey = process.env.OLA_MAPS_API_KEY;
+
+    console.log(`[API] Nearby places request for location: ${location}, radius: ${radius}`);
+
+    // Define place categories
+    const categories = {
+      amenities: 'amenity:restaurant,amenity:cafe,amenity:atm,amenity:hospital,amenity:pharmacy,amenity:bank',
+      connectivity: 'transit_station,bus_station,subway_station,train_station',
+      shopping: 'shopping_mall,store',
+      services: 'gas_station,parking,lodging'
+    };
+    
+    // If types parameter is provided, use it for all categories
+    if (types) {
+      Object.keys(categories).forEach(key => {
+        categories[key] = types;
+      });
+    }
+
+    // Fetch places for each category
+    const categoryPromises = Object.entries(categories).map(async ([categoryName, categoryTypes]) => {
+      try {
+        const response = await axios.get("https://api.olamaps.io/places/v1/nearbysearch/advanced", {
+          params: {
+            location: location,
+            radius: radius,
+            types: categoryTypes,
+            limit: 10,
+            api_key: apiKey
+          },
+          headers: {
+            'Referer': origin,
+            'Origin': origin,
+            'User-Agent': req.headers['user-agent'] || 'OlaMaps-Client/1.0'
+          }
+        });
+
+        if (response.data && response.data.predictions) {
+          // Fetch photos for places that have photo references
+          const placesWithPhotos = await Promise.all(
+            response.data.predictions.map(async (place) => {
+              if (place.photos && place.photos.length > 0) {
+                try {
+                  // photos array might contain photo_reference strings directly
+                  const photoRef = typeof place.photos[0] === 'string' 
+                    ? place.photos[0] 
+                    : place.photos[0].photo_reference || place.photos[0];
+                  
+                  if (photoRef) {
+                    const photoResponse = await axios.get("https://api.olamaps.io/places/v1/photo", {
+                      params: {
+                        photo_reference: photoRef,
+                        api_key: apiKey
+                      },
+                      headers: {
+                        'Referer': origin,
+                        'Origin': origin,
+                        'User-Agent': req.headers['user-agent'] || 'OlaMaps-Client/1.0'
+                      }
+                    });
+
+                    if (photoResponse.data && photoResponse.data.photos && photoResponse.data.photos.length > 0) {
+                      return {
+                        ...place,
+                        photo_url: photoResponse.data.photos[0].photoUri
+                      };
+                    }
+                  }
+                } catch (photoErr) {
+                  console.warn(`[API] Failed to fetch photo for place ${place.place_id}:`, photoErr.message);
+                }
+              }
+              return place;
+            })
+          );
+
+          return {
+            category: categoryName,
+            places: placesWithPhotos
+          };
+        }
+        return { category: categoryName, places: [] };
+      } catch (err) {
+        console.error(`[API] Error fetching ${categoryName}:`, err.response?.data || err.message);
+        return { category: categoryName, places: [] };
+      }
+    });
+
+    const categoryResults = await Promise.all(categoryPromises);
+
+    // Group results by category
+    const groupedResults = {};
+    categoryResults.forEach(({ category, places }) => {
+      if (places.length > 0) {
+        groupedResults[category] = places;
+      }
+    });
+
+    res.json({
+      success: true,
+      data: groupedResults
+    });
+
+  } catch (err) {
+    console.error("NEARBY PLACES ERROR:", err.response?.data || err.message);
+    res.status(500).json({
+      error: "Failed to fetch nearby places",
+      details: err.response?.data || err.message
+    });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ detail: "Not Found" });

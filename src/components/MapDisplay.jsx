@@ -72,16 +72,22 @@ function MapDisplay({ selectedResult }) {
         console.log('[MapDisplay] Calling init with config:', {
           style: 'https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json',
           container: mapContainer.current,
-          center: [77.61648476788898, 12.931423492103944],
+          center: [72.82535371370518,18.966990084336576],
           zoom: 12,
         })
 
         const myMap = olaMaps.init({
           style: 'https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json',
           container: mapContainer.current,
-          center: [77.61648476788898, 12.931423492103944], // Default center (Bangalore)
+          center: [72.82535371370518,18.966990084336576],
           zoom: 12,
         })
+ 
+        // // Add center marker to show initial position
+        // olaMaps
+        //   .addMarker({ offset: [0, -25], anchor: 'bottom' })
+        //   .setLngLat([72.82535371370518,18.966990084336576])
+        //   .addTo(myMap)
 
         console.log('[MapDisplay] Map initialized successfully:', myMap)
         console.log('[MapDisplay] Map methods available:', Object.keys(myMap || {}))
